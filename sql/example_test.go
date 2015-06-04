@@ -5,7 +5,7 @@
 package sql_test
 
 import (
-	"database/sql"
+	"github.com/mantyr/database/sql"
 	"fmt"
 	"log"
 )
