@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"sort"
 	"sync"
+	"strconv"
 )
 
 var drivers = make(map[string]driver.Driver)
@@ -1576,6 +1577,67 @@ type Rows struct {
 	closeStmt driver.Stmt // if non-nil, statement to Close on close
 }
 
+type RowIn struct {
+    items map[string]RowInValue
+}
+type RowInValue struct {
+    val string
+    is_null bool
+}
+
+func (r *RowIn) Get(name string) (val string) {
+    item, ok := r.items[name]
+    if ok {
+        return item.val
+    }
+    return ""
+}
+
+func (r *RowIn) GetInt(name string) (int) {
+    item, ok := r.items[name]
+    if ok {
+        i, _ := strconv.Atoi(item.val)
+        return i
+    }
+    return 0
+}
+
+func (r *RowIn) GetNull(name string) bool {
+    item, ok := r.items[name]
+    if ok {
+        return item.is_null
+    }
+    return false
+}
+
+
+func (rs *Rows) ScanRow() (row *RowIn, err error) {
+	row = new(RowIn)
+	row.items = make(map[string]RowInValue)
+
+	if rs.closed {
+		return row, errors.New("sql: Rows are closed")
+	}
+	if rs.lastcols == nil {
+		return row, errors.New("sql: Scan called without calling Next")
+	}
+
+	columns := rs.rowsi.Columns()
+	for i, sv := range rs.lastcols {
+		if sv != nil {
+			var s string
+			err := convertAssign(&s, sv)
+			if err != nil {
+				return nil, fmt.Errorf("sql: Scan error on column index %d: %v", i, err)
+			}
+			row.items[columns[i]] = RowInValue{s, false}
+		} else {
+			row.items[columns[i]] = RowInValue{"", true}
+		}
+	}
+	return row, nil
+}
+
 // Next prepares the next result row for reading with the Scan method.  It
 // returns true on success, or false if there is no next result row or an error
 // happened while preparing it.  Err should be consulted to distinguish between
@@ -1723,6 +1785,22 @@ func (r *Row) Scan(dest ...interface{}) error {
 	}
 
 	return nil
+}
+
+func (r *Row) ScanRow() (row *RowIn, err error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	defer r.rows.Close()
+
+	if !r.rows.Next() {
+		if err := r.rows.Err(); err != nil {
+			return nil, err
+		}
+		return nil, ErrNoRows
+	}
+	row, err = r.rows.ScanRow()
+	return row, err
 }
 
 // A Result summarizes an executed SQL command.
