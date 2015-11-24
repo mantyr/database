@@ -1604,6 +1604,16 @@ func (r *RowIn) GetInt(name string) (int) {
     return 0
 }
 
+func (r *RowIn) GetInt64(name string) (int64) {
+    item, ok := r.items[name]
+    if ok {
+        i, _ := strconv.ParseInt(item.val, 10, 64)
+        return i
+    }
+    return 0
+}
+
+
 func (r *RowIn) GetNull(name string) bool {
     item, ok := r.items[name]
     if ok {
