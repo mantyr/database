@@ -1587,6 +1587,35 @@ type RowInValue struct {
     is_null bool
 }
 
+func (r *RowInValue) Get() string {
+    return r.val
+}
+
+func (r *RowInValue) GetInt() int {
+    i, err := strconv.Atoi(r.val)
+    if err != nil {
+        return 0
+    }
+    return i
+}
+
+func (r *RowInValue) GetInt64() int64 {
+    i, err := strconv.ParseInt(r.val, 10, 64)
+    if err != nil {
+        return 0
+    }
+    return i
+}
+
+func (r *RowInValue) GetNull() bool {
+    return r.is_null
+}
+
+
+func (r *RowIn) GetItems() map[string]RowInValue {
+    return r.items
+}
+
 func (r *RowIn) Get(name string) (val string) {
     item, ok := r.items[name]
     if ok {
