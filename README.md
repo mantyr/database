@@ -36,7 +36,7 @@ func db_get_example(id int) (int, string, int) {
             "name" as item_name,
             "180"  as item_pid
         FROM table_name
-        WHERE id = "`.strconv.Itoa(id).`"
+        WHERE id = "`+strconv.Itoa(id)+`"
         LIMIT 1
     `
     res := db.QueryRow(query)
